@@ -73,3 +73,30 @@ CREATE TABLE osm_compare_exclusions(
 	userid BIGINT,
 	CONSTRAINT osm_compare_exclusions_pk PRIMARY KEY(project, osm_id)
 );
+
+-- Helpers links
+CREATE TABLE user_helpers(
+	id BIGSERIAL PRIMARY KEY,
+	userid BIGINT NOT NULL,
+	helpername VARCHAR NOT NULL,
+	shortcode VARCHAR NOT NULL UNIQUE,
+	labels JSONB
+);
+
+CREATE INDEX user_helpers_userid_idx ON user_helpers(userid);
+CREATE INDEX user_helpers_shortcode_idx ON user_helpers(shortcode);
+
+-- Helpers reports
+CREATE TYPE helper_report_status AS ENUM ('new', 'checking', 'verified', 'duplicate', 'invalid');
+CREATE TABLE helper_reports(
+	id BIGSERIAL PRIMARY KEY,
+	helperid BIGINT REFERENCES user_helpers(id),
+	ts TIMESTAMP NOT NULL DEFAULT current_timestamp,
+	report VARCHAR NOT NULL,
+	picture VARCHAR,
+	coordinates GEOMETRY(Point, 4326),
+	status helper_report_status NOT NULL DEFAULT 'new',
+	permission_picture BOOLEAN NOT NULL DEFAULT false
+);
+
+CREATE INDEX helper_reports_helperid_idx ON helper_reports(helperid);

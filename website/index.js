@@ -36,8 +36,10 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.options('*', cors());
 app.use(compression());
+app.use(express.urlencoded({extended: true}));
 app.set('view engine', 'pug');
 app.set('views', __dirname+'/templates');
+
 
 // Index
 app.get('/', (req, res) => {
@@ -51,6 +53,7 @@ app.get('/error/:code', (req, res) => {
 	const httpcode = req.params.code && !isNaN(req.params.code) ? req.params.code : "400";
 	res.status(httpcode).render('pages/error', { CONFIG, httpcode });
 });
+
 
 // Project page
 app.get('/projects/:id', (req, res) => {
@@ -217,6 +220,7 @@ app.get('/projects/:id/stats', (req, res) => {
 	});
 });
 
+
 // User contributions
 app.post('/projects/:id/contribute/:userid', (req, res) => {
 	// Check project is active
@@ -293,6 +297,7 @@ app.post('/projects/:id/ignore/:osmtype/:osmid', (req, res) => {
 	});
 });
 
+
 // User page
 app.get('/users/:name', (req, res) => {
 	if(!req.params.name) {
@@ -327,6 +332,74 @@ app.get('/users/:name', (req, res) => {
 		res.redirect('/error/500');
 	});
 });
+
+// User helpers
+app.get('/helpers', (req, res) => res.render('pages/helpers', { CONFIG }));
+
+const checkUserAuth = (name, id) => {
+	if(!name || !id) { throw new Error(); }
+	return pool.query(`SELECT userid FROM user_names WHERE username = $1 AND userid = $2`, [ name, id ])
+	.then(res1 => {
+		if(res1.rows.length === 1) { return true; }
+		else { throw new Error(); }
+	});
+};
+
+app.get('/users/:name/helpers', (req, res) => {
+	checkUserAuth(req.params.name, req.query.user_id)
+	.then(() => {
+		pool.query("SELECT id, helpername, shortcode, labels FROM user_helpers WHERE userid = $1", [ req.query.user_id ])
+		.then(result => {
+			res.json(result.rows.map(r => ({ id: r.id, name: r.helpername, shortcode: r.shortcode, labels: r.labels })));
+		})
+		.catch(e => {
+			res.redirect('/error/500');
+		});
+	})
+	.catch(e => res.redirect('/error/404'));
+});
+
+// New user helper
+app.post('/users/:name/helpers', (req, res) => {
+	// Check mandatory parameters
+	if(!req.body || !req.body.helpername || !req.body.shortcode) {
+		console.log(req.body);
+		return res.redirect('/error/400');
+	}
+
+	checkUserAuth(req.params.name, req.query.user_id)
+	.then(() => {
+		pool.query("INSERT INTO user_helpers(userid, helpername, shortcode, labels) VALUES($1, $2, $3, $4) RETURNING id", [
+			req.query.user_id,
+			req.body.helpername,
+			req.body.shortcode,
+			req.body.labels
+		])
+		.then(result => {
+			res.json({ id: result.rows[0].id });
+		})
+		.catch(e => {
+			res.redirect('/error/500');
+		});
+	})
+	.catch(e => res.redirect('/error/404'));
+});
+
+// Delete user helper
+app.delete('/users/:name/helpers/:hid', (req, res) => {
+	if(!req.params.hid || !/^\d+$/.test(req.params.hid)) {
+		return res.redirect('/error/400');
+	}
+
+	checkUserAuth(req.params.name, req.query.user_id)
+	.then(() => {
+		pool.query("DELETE FROM user_helpers WHERE id = $1 AND userid = $2", [ req.params.hid, req.query.user_id ])
+		.then(() => res.send('OK'))
+		.catch(e => res.redirect('/error/500'));
+	})
+	.catch(e => res.redirect('/error/404'));
+});
+
 
 // Documentation
 ['README.md', 'DEVELOP.md', 'LICENSE.txt'].forEach(file => {
@@ -390,6 +463,7 @@ app.get('/lib/:modname/:file', (req, res) => {
 });
 
 app.use('/lib/fontawesome', express.static(path.join(__dirname, '../node_modules/@fortawesome/fontawesome-free')));
+
 
 // 404
 app.use((req, res) => {

@@ -46,6 +46,7 @@ La configuration générale de l'outil est à renseigner dans `config.json`. Un 
 * `REPOSITORY_URL` : URL du dépôt du logiciel (exemple `https://github.com/vdct/ProjetDuMois`)
 * `PDM_TILES_URL` : URL d'accès au service *pg_tileserv*, qui met à disposition les couches dans votre base de données
 * `GEOJSON_BOUNDS` : objet de type `Geometry` (polygone ou multipolygone) en GeoJSON délimitant la zone où rechercher des notes OSM
+* `HELPERS_DOMAIN` : nom de domaine pour les liens de parrainage (exemple `tuveuxmaphoto.fr`)
 
 
 ## Configuration des projets

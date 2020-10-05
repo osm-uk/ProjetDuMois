@@ -1,0 +1,21 @@
+extends ../layout.pug
+
+
+block navbar
+	a(href="/#summary")
+		i.fa.fa-calendar-day(title="En ce moment")
+		span En ce moment
+	a(href="/#statistics")
+		i.fa.fa-chart-bar(title="Statistiques")
+		span Statistiques
+	a(href="/#data")
+		i.fa.fa-file-download(title="Données")
+		span Données
+
+
+block content
+	div.container
+		h2 Parrainages
+		include ../components/helpers_list.pug
+
+		h2.mt-3 Signalements

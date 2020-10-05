@@ -1,0 +1,120 @@
+form#pdm-helpers
+	table.table.table-sm
+		thead.thead-light
+			tr
+				th.w-50(scope="col") Nom
+				th.w-50(scope="col") URL à partager
+				th.text-center(scope="col") Actions
+		tbody#helpers-list
+			tr
+				td.text-center.p-2(colspan="3")
+					div.spinner-border.text-primary(role="status" style="width: 32px; height: 32px")
+			tr.d-none#helpers-new
+				td
+					div.input-group
+						input.form-control(name="helpername" type="text" placeholder="Nom de la personne / groupe")
+				td
+					div.input-group
+						div.input-group-prepend
+							span.input-group-text #{CONFIG.HELPERS_DOMAIN}/
+						input.form-control(name="shortcode" type="text")
+				td.text-center
+					div.btn-group.btn-group-sm.w-100(role="group")
+						button.btn.btn-success.w-50(type="submit" title="Valider")
+							i.fa.fa-check
+						button#helpers-cancel-new.btn.btn-danger.w-50(type="button" title="Annuler")
+							i.fa.fa-times
+
+button.btn.btn-primary#helpers-new-btn
+	i.fa.fa-plus.mr-1
+	| Créer un lien de parrainage
+
+script.
+	const helpersDom = document.getElementById("pdm-helpers");
+	const helpersListDom = document.getElementById("helpers-list");
+	const helpersNewDom = document.getElementById("helpers-new");
+	const helpersBtnNewDom = document.getElementById("helpers-new-btn");
+
+	// New helper
+	helpersBtnNewDom.addEventListener("click", e => {
+		helpersNewDom.classList.remove("d-none");
+		helpersBtnNewDom.setAttribute("disabled", null);
+
+		helpersDom.reset();
+	});
+
+	// Cancel new helper
+	document.getElementById("helpers-cancel-new").addEventListener("click", e => {
+		helpersNewDom.classList.add("d-none");
+		helpersBtnNewDom.removeAttribute("disabled");
+	});
+
+	// Send data on form submit
+	helpersDom.addEventListener("submit", e => {
+		e.preventDefault();
+		const params = new URLSearchParams([...new FormData(e.target)]);
+		const isNewHelper = !helpersNewDom.classList.contains("d-none");
+
+		if(isNewHelper) {
+			fetch(`/users/${window.osm_user.name}/helpers?user_id=${window.osm_user.id}`, {
+				method: "POST",
+				headers: { "Content-Type": "application/x-www-form-urlencoded" },
+				body: params
+			})
+			.then(res => res.json())
+			.then(res => {
+				addHelperInTable({ id: res.id, name: params.get("helpername"), shortcode: params.get("shortcode") });
+				helpersNewDom.classList.add("d-none");
+				helpersBtnNewDom.removeAttribute("disabled");
+			})
+			.catch(e => {
+				console.error(e);
+				alert("Une erreur s'est produite à l'envoi. Merci de réessayer plus tard");
+			});
+		}
+	});
+
+	// Add a single helper row in table
+	function addHelperInTable(helper) {
+		const helperDom = document.createElement("tr");
+
+		const td1 = document.createElement("td");
+		td1.appendChild(document.createTextNode(helper.name));
+		helperDom.appendChild(td1);
+
+		const td2 = document.createElement("td");
+		const shortlink = document.createElement("a");
+		shortlink.href = "https://#{CONFIG.HELPERS_DOMAIN}/"+helper.shortcode;
+		shortlink.innerHTML = "#{CONFIG.HELPERS_DOMAIN}/"+helper.shortcode;
+		td2.appendChild(shortlink);
+		helperDom.appendChild(td2);
+
+		const td3 = document.createElement("td");
+		td3.classList.add("text-center");
+		helperDom.appendChild(td3);
+
+		const btnDelete = document.createElement("button");
+		btnDelete.type = "button";
+		btnDelete.title = "Supprimer";
+		btnDelete.classList.add("btn", "btn-danger", "btn-sm");
+		btnDelete.innerHTML = '<i class="fa fa-times"></i>';
+		btnDelete.addEventListener("click", e => {
+			fetch(`/users/${window.osm_user.name}/helpers/${helper.id}?user_id=${window.osm_user.id}`, { method: "DELETE" })
+			.then(() => helpersListDom.removeChild(helperDom))
+			.catch(e => alert("Une erreur s'est produite à la suppression, merci de réessayer"));
+		});
+		td3.appendChild(btnDelete);
+
+		helpersListDom.insertBefore(helperDom, helpersListDom.lastChild);
+	}
+
+	// Load helpers on page login
+	window.addEventListener("osm_login", () => {
+		fetch(`/users/${window.osm_user.name}/helpers?user_id=${window.osm_user.id}`)
+		.then(res => res.json())
+		.then(helpers => {
+			helpersListDom.removeChild(helpersListDom.firstChild);
+			helpers.forEach(addHelperInTable);
+		})
+		.catch(e => console.error(e));
+	});
