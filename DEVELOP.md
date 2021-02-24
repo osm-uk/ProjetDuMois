@@ -7,10 +7,20 @@
 * PostgreSQL >= 10
 * Python 3
 * [Osmium](https://osmcode.org/osmium-tool/)
+	* `brew install osmium-tool`
 * [osmctools](https://wiki.openstreetmap.org/wiki/Osmupdate)
+	* `brew install osmfilter` 
 * [Imposm](https://imposm.org/) >= 3
+	* [Follow instructions to build for macOS](https://github.com/omniscale/imposm3#source) aka:
+		* `brew install geos`
+		* `brew install leveldb`
+		* [Download and install go > 1.10](https://golang.org/dl/)
+		* ```export GOPATH=`pwd` ```
+		* `go get github.com/omniscale/imposm3`
+		* `go install github.com/omniscale/imposm3/cmd/imposm`
 * [pg_tileserv](https://github.com/CrunchyData/pg_tileserv)
-* Dependencies of [sendfile_osm_oauth_protector](https://github.com/geofabrik/sendfile_osm_oauth_protector#requirements)
+* Dependencies of [`sendfile_osm_oauth_protector`](https://github.com/geofabrik/sendfile_osm_oauth_protector#requirements)
+	* `pip install requests`
 
 
 ## Installation
